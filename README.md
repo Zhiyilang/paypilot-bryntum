@@ -17,7 +17,7 @@ phase, and an AI suggests how to reroute the moment a payment is late.
 
 ## Run
 ```bash
-pip install -r requirements.txt
+# No pip install needed — pure stdlib.
 # optional: export PAYPAL_CLIENT_ID=... PAYPAL_SECRET=...  (sandbox)
 python app.py
 # open http://localhost:5000
