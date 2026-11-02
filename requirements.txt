@@ -1,1 +1,2 @@
-Flask>=3.0
+# No third-party dependencies. Pure Python 3 standard library only.
+# (Flask was removed; the server uses http.server.)
