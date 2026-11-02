@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{ project }} — PayPilot Schedule</title>
+<link rel="stylesheet" href="https://cdn.bryntum.com/products/scheduler/6.1.0/theme-material.css" />
+<script src="https://cdn.bryntum.com/products/scheduler/6.1.0/bryntum.umd.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background:#fafafa; }
+  h1 { font-size: 18px; } .bar { display:flex; gap:8px; margin:10px 0; }
+  button { padding:8px 14px; border:0; border-radius:6px; background:#0070ba; color:#fff; cursor:pointer; }
+  button.alt { background:#ffb300; color:#000; }
+  #advice { background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; margin-top:12px; }
+  .adv { padding:8px; border-left:3px solid #0070ba; margin:6px 0; background:#f5f9ff; }
+  .adv.high { border-color:#d33; background:#fff5f5; }
+  .adv.ok { border-color:#0a0; background:#f3fff3; }
+  #status { font-size:13px; color:#555; }
+</style>
+</head>
+<body>
+  <h1>{{ project }} — PayPilot Schedule</h1>
+  <div id="status">Loading board…</div>
+  <div class="bar">
+    <button id="advise">🤖 AI: reroute late payments</button>
+  </div>
+  <div id="container" style="height:360px;background:#fff;border-radius:8px;"></div>
+  <div id="advice"><b>AI advice:</b> click the button above.</div>
+
+<script>
+let TASKS = [];
+async function load() {
+  const r = await fetch('/api/board'); const d = await r.json();
+  TASKS = d.tasks;
+  document.getElementById('status').textContent =
+    `Today ${d.today} · ${d.tasks.length} phases · currency ${d.currency}`;
+  const rows = d.tasks.map(t => ({
+    id: t.id, name: t.name,
+    startDate: t.start, endDate: t.end,
+    paid: t.paid, blocked: !!t.blocked, amount: t.amount
+  }));
+  scheduler.eventStore.data = rows.map(t => ({
+    id: t.id, resourceId: 'r1', name: (t.paid ? '✅ ' : (t.blocked ? '🔒 ' : '⏳ ')) + t.name,
+    startDate: t.startDate, endDate: t.endDate
+  }));
+}
+const scheduler = new bryntum.scheduler.Scheduler({
+  appendTo: 'container',
+  startDate: '2026-11-04', endDate: '2026-11-25',
+  viewPreset: 'weekAndDay',
+  columns: [{ text: 'Phase', field: 'name', width: 200 }],
+  resources: [{ id: 'r1', name: 'Project' }],
+  eventStore: { data: [] },
+  listeners: {
+    eventclick: async ({ eventRecord }) => {
+      const t = TASKS.find(x => x.id === eventRecord.id);
+      if (!t || t.paid) return;
+      if (!confirm(`Pay $${t.amount} to unblock "${t.name}"? (PayPal)`)) return;
+      const p = await fetch('/api/pay', {method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({task_id: t.id})});
+      const pr = await p.json();
+      alert('PayPal order: ' + (pr.order_id || pr.order?.id) + (pr.mock ? ' (demo mode)' : ''));
+      if (pr.mock || pr.order) {
+        await fetch('/api/pay/confirm', {method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({task_id: t.id})});
+        load();
+      }
+    }
+  }
+});
+async function advise() {
+  const r = await fetch('/api/ai/advise', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({tasks: TASKS, today: new Date().toISOString().slice(0,10)})});
+  const d = await r.json();
+  document.getElementById('advice').innerHTML = '<b>AI advice:</b>' +
+    d.advice.map(a => `<div class="adv ${a.severity}"><b>${a.task}</b> — ${a.text}</div>`).join('');
+}
+document.getElementById('advise').onclick = advise;
+load();
+</script>
+</body>
+</html>
