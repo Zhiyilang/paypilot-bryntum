@@ -1,5 +1,11 @@
 # PayPilot Schedule — AI + PayPal aware project scheduler
 
+<!-- ORDER-CTA -->
+> **需要定制或代做？** 我承接 Excel 代做（¥50 起）/ 零依赖 Python 脚本定制（¥200 起）/ 影刀·UiBot 机器人（¥500 起）。
+> **先报价后付款、无预付款**，微信 / 支付宝结算，询价发 **2383844705@qq.com**（标题写「接单 + 需求类型」）。
+> 更多工具与报价见作品集：https://zhiyilang.github.io/
+
+
 A working proof-of-concept for the **PayPal "Build What's Next with AI + PayPal"**
 hackathon (Bryntum prize category). It shows how a payments API changes what
 you can build around scheduling: a late/unpaid phase **visibly blocks** the next
